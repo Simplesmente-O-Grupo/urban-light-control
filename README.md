@@ -1,6 +1,6 @@
 # Architecture Diagram
 
-![Architecture Diagram](iot-platform\docs\assets\UL-ArchDiagram.jpg)
+![Architecture Diagram](iot-platform/docs/assets/UL-ArchDiagram.jpg)
 
 # Entity Relational Diagram (ERD)
 
