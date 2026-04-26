@@ -4,15 +4,15 @@
 
 # Entity Relational Diagram (ERD)
 
-![ERD](iot-platform\docs\assets\ERD.png)
+![ERD](iot-platform/docs/assets/ERD.png)
 
 # Hardware Diagram
 
-![Hardware Diagram](iot-platform\docs\assets\HardwareDiagram.png)
+![Hardware Diagram](iot-platform/docs/assets/HardwareDiagram.png)
 
 # Prototype Model Diagram
 
-![Prototype Model Diagram](iot-platform\docs\assets\PrototypeModelDiagram.png)
+![Prototype Model Diagram](iot-platform/docs/assets/PrototypeModelDiagram.png)
 
 # Requirements
 
