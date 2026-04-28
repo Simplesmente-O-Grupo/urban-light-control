@@ -79,3 +79,9 @@
 - **NFR002 - Tolerância à queda de energia (buffer de dados)**
   - Dados devem ser armazenados em memória flash em caso de falha de energia
   - Squad: Hardware/Backend Team
+
+
+
+
+
+C:\Users\luizg\OneDrive\Área de Trabalho\Life\2026\College\Architecture\ULControl\Project\urban-light-control\iot-platform\docs\assets\ERD.png
