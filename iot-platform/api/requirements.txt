@@ -1,2 +1,4 @@
-fastapi
+fastapi[standard]
 uvicorn
+sqlalchemy
+psycopg2-binary
