@@ -1,18 +1,18 @@
 # Architecture Diagram
 
-![Architecture Diagram](docs\assets\UL-ArchDiagram.jpg)
+![Architecture Diagram](iot-platform/docs/assets/UL-ArchDiagram.jpg)
 
 # Entity Relational Diagram (ERD)
 
-![ERD](docs\assets\ERD.png)
+![ERD](iot-platform/docs/assets/ERD.png)
 
 # Hardware Diagram
 
-![Hardware Diagram](docs\assets\HardwareDiagram.png)
+![Hardware Diagram](iot-platform/docs/assets/HardwareDiagram.png)
 
 # Prototype Model Diagram
 
-![Prototype Model Diagram](docs\assets\PrototypeModelDiagram.png)
+![Prototype Model Diagram](iot-platform/docs/assets/PrototypeModelDiagram.png)
 
 # Requirements
 
@@ -79,9 +79,3 @@
 - **NFR002 - Tolerância à queda de energia (buffer de dados)**
   - Dados devem ser armazenados em memória flash em caso de falha de energia
   - Squad: Hardware/Backend Team
-
-
-
-
-
-C:\Users\luizg\OneDrive\Área de Trabalho\Life\2026\College\Architecture\ULControl\Project\urban-light-control\iot-platform\docs\assets\ERD.png
