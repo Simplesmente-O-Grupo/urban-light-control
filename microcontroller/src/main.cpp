@@ -2,6 +2,7 @@
 #include <Wire.h>
 #include <BH1750.h>
 #include <queue.hpp>
+#include <WiFi.h>
 
 BH1750 lightMeter;
 
@@ -26,6 +27,26 @@ unsigned long last_light_reading_time = 0;
 unsigned long last_light_reading_interval = 2000;
 
 
+/* WiFi */
+const char *wifi_ssid = "hrdstn-1";
+const char *wifi_pass = "hewhowatches";
+// Conecta ao WiFi
+void setupWiFi() {
+  delay(10);
+  Serial.println();
+  Serial.print("Conectando em ");
+  Serial.println(wifi_ssid);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(wifi_ssid, wifi_pass);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi Conectado!");
+  Serial.print("Endereco IP: ");
+  Serial.println(WiFi.localIP());
+}
 
 void setup() {
 	Serial.begin(9600);
@@ -34,6 +55,8 @@ void setup() {
 	Wire.begin();
 
 	lightMeter.begin();
+
+	setupWiFi();
 
 	Serial.println("==BEGIN==");
 }
