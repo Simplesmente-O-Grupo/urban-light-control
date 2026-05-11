@@ -3,7 +3,9 @@
 #include <BH1750.h>
 #include <queue.hpp>
 #include <WiFi.h>
-#include <time.h>
+#include <time.h> // Para o timestamp NTP
+#include <PubSubClient.h> // Para MQTT
+#include <ArduinoJson.h>  // Para o payload
 
 BH1750 lightMeter;
 
@@ -89,6 +91,88 @@ void setupNTP() {
 	Serial.println("\nNTP Sincronizado!");
 }
 
+/* MQTT */
+const char* mqtt_server = "192.168.241.131"; // Ex: "192.168.1.100" ou "broker.hivemq.com"
+const int   mqtt_port = 1883;
+const char* area_id = "1"; // <stationid> do seu tópico
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+unsigned long publish_time = 0;
+unsigned long publish_interval = 30 * 1000;
+
+void publishMqttMessages() {
+	// Nada para enviar, pula.
+	if (cloud_buffer.size() == 0) return;
+
+	if (!client.connected()) {
+		Serial.println("Cliente MQTT desconectado. Ignorando publicação.");
+		return;
+	}
+
+	// Monta o tópico: /area/<stationid>
+	String topic = "/area/" + String(area_id);
+
+	// Monta o Payload JSON
+	JsonDocument doc;
+
+	for (int i = 0; i < cloud_buffer.size(); i++) {
+		CloudBufferItem it;
+
+		cloud_buffer.pop(it);
+
+		doc["values"][i] = it.lux;
+		doc["timestamps"][i] = it.timestamp;
+	}
+
+	// Serializa o JSON para uma string
+	String payload;
+	serializeJson(doc, payload);
+	Serial.print(payload.c_str());
+
+	// Publica a mensagem
+	if (client.publish(topic.c_str(), payload.c_str())) {
+		Serial.print("Mensagem MQTT publicada [");
+		Serial.print(topic);
+		Serial.print("]: ");
+		Serial.println(payload);
+		cloud_buffer.clear();
+	} else {
+		Serial.println("Falha ao publicar mensagem MQTT.");
+	}
+}
+
+// Função de Callback do MQTT
+void mqttCallback(char* topic, byte* payload, unsigned int length) {
+	Serial.print("Mensagem recebida [");
+	Serial.print(topic);
+	Serial.print("]: ");
+	for (int i = 0; i < length; i++) {
+		Serial.print((char)payload[i]);
+	}
+	Serial.println();
+}
+
+// Reconecta ao Broker MQTT
+void reconnectMQTT() {
+	while (!client.connected()) {
+		Serial.print("Tentando conexao MQTT...");
+		// Tenta conectar
+		// (Pode adicionar usuário/senha aqui se precisar)
+		if (client.connect(area_id)) {
+			Serial.println("conectado!");
+			// Você pode se inscrever em tópicos aqui, se necessário
+			// client.subscribe("seu/topico/de/comando");
+		} else {
+			Serial.print("falha, rc=");
+			Serial.print(client.state());
+			Serial.println(" tentando novamente em 5 segundos");
+			delay(5000);
+		}
+	}
+}
+
 void setup() {
 	Serial.begin(9600);
 
@@ -101,11 +185,22 @@ void setup() {
 
 	setupNTP();
 
+	// Configura o cliente MQTT
+	client.setServer(mqtt_server, mqtt_port);
+	client.setBufferSize(1024);
+	client.setCallback(mqttCallback);
+
 	Serial.println("==BEGIN==");
 }
 
 void loop() {
 	unsigned long now = millis();
+
+	// Garante que o MQTT está conectado
+	if (!client.connected()) {
+		reconnectMQTT();
+	}
+	client.loop();
 
 	if (now - last_light_reading_time >= last_light_reading_interval) {
 		last_light_reading_time = now;
@@ -125,5 +220,10 @@ void loop() {
 		it.timestamp = last_light_reading_timestamp;
 		cloud_buffer.push(it);
 
+	}
+
+	if ((cloud_buffer.size() > 0 && now - publish_time >= publish_interval) || cloud_buffer.isFull()) {
+		publish_time = now;
+		publishMqttMessages();
 	}
 }
