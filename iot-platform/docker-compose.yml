@@ -26,7 +26,7 @@ services:
       - db_data:/var/lib/postgresql/data
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user"]
+      test: ["CMD-SHELL", "pg_isready -U user -d ulcontrol"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -43,6 +43,14 @@ services:
 
     depends_on:
       - db
+  mosquitto:
+    image: eclipse-mosquitto:2.1-alpine
+    volumes:
+      - type: bind
+        source: "$PWD/mosquitto/config/"
+        target: "/mosquitto/config/"
+    ports:
+      - "1883:1883"
 
 volumes:
   db_data:
