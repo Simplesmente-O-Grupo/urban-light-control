@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
-from ..db import SessionLocal
-from ..models import Sensor, LightRegion
-from ..schemas.sensor import PostSensor
+from db.database import SessionLocal
+from models.models import Sensor, LightRegion
+from schemas.sensor import PostSensor
 
 router = APIRouter(
     prefix='/sensors',
