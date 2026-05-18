@@ -31,14 +31,15 @@ const long cloud_buffer_interval = 10 * 1000;
 unsigned long cloud_buffer_time = 0;
 
 float last_light_reading = 0;
+float filtered_light = 0;
 unsigned long last_light_reading_timestamp = 0;
 unsigned long last_light_reading_time = 0;
-unsigned long last_light_reading_interval = 2000;
+unsigned long last_light_reading_interval = 20;
 
 
 /* WiFi */
-const char *wifi_ssid = "hrdstn-1";
-const char *wifi_pass = "hewhowatches";
+const char *wifi_ssid = "empire";
+const char *wifi_pass = "nordenfairy";
 // Conecta ao WiFi
 void setupWiFi() {
 	delay(10);
@@ -46,7 +47,7 @@ void setupWiFi() {
 	Serial.print("Conectando em ");
 	Serial.println(wifi_ssid);
 
-	WiFi.mode(WIFI_STA);
+	//WiFi.mode(WIFI_STA);
 	WiFi.begin(wifi_ssid, wifi_pass);
 	while (WiFi.status() != WL_CONNECTED) {
 		delay(500);
@@ -173,6 +174,32 @@ void reconnectMQTT() {
 	}
 }
 
+/* Controle */
+const int LIGHT_POST = 27;
+
+float Kp = 0.3;
+float setpoint_lux = 200.0;
+
+const int pwmFreq = 5000;
+const int pwmResolution = 8;
+const int pwmChannel = 0;
+
+float Ki = 0.05;
+float integral = 0;
+void control_led() {
+	float error = setpoint_lux - filtered_light;
+
+	integral += error;
+
+	float output = Kp * error + Ki * integral;
+
+	output = constrain(output, 0, 255);
+
+
+	ledcWrite(pwmChannel, (int)output);
+
+}
+
 void setup() {
 	Serial.begin(9600);
 
@@ -185,6 +212,9 @@ void setup() {
 
 	setupNTP();
 
+	ledcSetup(pwmChannel, pwmFreq, pwmResolution);
+	ledcAttachPin(LIGHT_POST, pwmChannel);
+
 	// Configura o cliente MQTT
 	client.setServer(mqtt_server, mqtt_port);
 	client.setBufferSize(1024);
@@ -193,23 +223,28 @@ void setup() {
 	Serial.println("==BEGIN==");
 }
 
+
 void loop() {
 	unsigned long now = millis();
 
+
 	// Garante que o MQTT está conectado
-	if (!client.connected()) {
-		reconnectMQTT();
-	}
-	client.loop();
+	//if (!client.connected()) {
+	//	reconnectMQTT();
+	//}
+	//client.loop();
 
 	if (now - last_light_reading_time >= last_light_reading_interval) {
 		last_light_reading_time = now;
 		last_light_reading = lightMeter.readLightLevel();
 		last_light_reading_timestamp = getTimestamp();
 
+		filtered_light = 0.9 * filtered_light + 0.1 * last_light_reading;
+
 		Serial.print("Light: ");
-		Serial.print(last_light_reading);
+		Serial.print(filtered_light);
 		Serial.println(" lx");
+		control_led();
 	}
 
 	if (now - cloud_buffer_time >= cloud_buffer_interval) {
@@ -224,6 +259,6 @@ void loop() {
 
 	if ((cloud_buffer.size() > 0 && now - publish_time >= publish_interval) || cloud_buffer.isFull()) {
 		publish_time = now;
-		publishMqttMessages();
+		//publishMqttMessages();
 	}
 }
