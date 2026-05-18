@@ -2,46 +2,79 @@ from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
 from db.database import SessionLocal
 from models.models import Sensor, LightRegion
-from schemas.sensor import PostSensor
+from schemas.sensor import SensorCreate, SensorRead
+from typing import List
 
 router = APIRouter(
     prefix='/sensors',
     tags=['sensors']
 )
 
-@router.get('/')
-async def get_sensors():
-    dc = {'sensors': []}
-    session = SessionLocal()
-    try:
-        stmt = select(Sensor)
-        devices = session.execute(stmt)
-        for device in devices.scalars():
-            dev = {
-                'id': device.id,
-                'name': device.name,
-                'light_region_id': device.light_region_id,
-                'active': device.active
-                }
-            dc['sensors'].append(dev)
-        dc['size'] = len(dc['sensors'])
-        session.close()
-        return dc
-    finally:        
-        session.close()
+@router.post("/", response_model=SensorRead)
+def create_sensor(
+    sensor: SensorCreate,
+):
+    db = SessionLocal()
+    # Check if light region exists
+    light_region = (
+        db.query(LightRegion)
+        .filter(LightRegion.id == sensor.light_region_id)
+        .first()
+    )
 
-@router.post('/')
-async def post_sensor(sensor: PostSensor):
-    session = SessionLocal()
-    light_region = session.get(LightRegion, sensor.light_region_id)
     if not light_region:
-        session.close()
         raise HTTPException(
             status_code=404,
-            detail=f"Não existe região de iluminação com id {sensor.light_region_id}"
+            detail="Light region not found"
         )
 
-    session.add(Sensor(name=sensor.name, light_region_id=sensor.light_region_id, is_active=True))
-    session.commit()
-    session.close()
-    return {'msg': 'Sensor criado com sucesso.'}
+    db_sensor = Sensor(
+        name=sensor.name,
+        active=sensor.active,
+        light_region_id=sensor.light_region_id
+    )
+
+    db.add(db_sensor)
+    db.commit()
+    db.refresh(db_sensor)
+    db.close()
+
+    return db_sensor
+
+@router.get("/", response_model=List[SensorRead])
+def get_sensors(
+    skip: int = 0,
+    limit: int = 100,
+):
+    db = SessionLocal()
+
+    sensors = (
+        db.query(Sensor)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    db.close()
+
+    return sensors
+
+@router.get("/{sensor_id}", response_model=SensorRead)
+def get_sensor(
+    sensor_id: int,
+):
+    db = SessionLocal()
+    sensor = (
+        db.query(Sensor)
+        .filter(Sensor.id == sensor_id)
+        .first()
+    )
+
+    if not sensor:
+        raise HTTPException(
+            status_code=404,
+            detail="Sensor not found"
+        )
+
+    db.close()
+
+    return sensor
